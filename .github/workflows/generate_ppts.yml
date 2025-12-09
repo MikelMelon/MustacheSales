@@ -1,0 +1,46 @@
+name: Generate PPTX and commit
+on:
+  workflow_dispatch: {}
+  push:
+    branches:
+      - main
+
+jobs:
+  generate-and-commit:
+    name: Generate PPTX and commit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install python-pptx
+        run: |
+          python -m pip install --upgrade pip
+          pip install python-pptx
+
+      - name: Generate PPTX files
+        run: |
+          python generate_modules_4_8.py --template "Ableton_Live.pptx" --out generated_ppts
+
+      - name: Commit generated PPTX files
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add generated_ppts || true
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Add generated PPTX for modules 4-8"
+            git push
+          fi
+        
